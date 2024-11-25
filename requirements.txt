@@ -1,4 +1,7 @@
-streamlit
 pandas
+matplotlib
+seaborn
+numpy
+streamlit
 plotly
-analyze_bom_data
+openpyxl
