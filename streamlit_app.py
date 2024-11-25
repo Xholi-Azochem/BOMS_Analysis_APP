@@ -5,37 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from io import BytesIO
 from analyze_bom_data import analyze_bom_data
-
-def generate_insights(analysis_results):
-    insights = []
-
-    top_complex = analysis_results["product_complexity"].head()
-    insights.append(f"Most complex products: {', '.join(top_complex.index)}")
-
-    cost_dist = analysis_results["cost_distribution"]
-    insights.append(f"Average product cost: R{cost_dist['avg_product_cost']:.2f}")
-
-    common_components = analysis_results["component_usage"].head()
-    insights.append(f"Most commonly used components: {', '.join(common_components.index)}")
-
-    product_metrics = analysis_results["product_metrics"]
-    # insights.append(f"Minimum and Maximum Quantities to Produce:")
-    for fg_code in product_metrics.index:
-        min_qty = product_metrics.loc[fg_code, "MIN_QTY_TO_PRODUCE"]
-        max_qty = product_metrics.loc[fg_code, "MAX_QTY_TO_PRODUCE"]
-        # insights.append(f"FG Code {fg_code}: Min = {min_qty}, Max = {max_qty}")
-
-    return insights
-
-def save_analysis_results_to_excel(analysis_results, buffer):
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        analysis_results["product_metrics"].to_excel(writer, sheet_name="Product_Metrics")
-        analysis_results["product_complexity"].to_excel(writer, sheet_name="Product_Complexity")
-        analysis_results["component_usage"].to_excel(writer, sheet_name="Component_Usage")
-        cost_dist = pd.DataFrame.from_dict(analysis_results["cost_distribution"], orient="index", columns=["Value"])
-        cost_dist.to_excel(writer, sheet_name="Cost_Distribution")
-
-
+from generate_insights import generate_insights
+from save_analysis_results_to_excel import save_analysis_results_to_excel
 
 # Set page config
 st.set_page_config(page_title="BOM Analysis Dashboard", layout="wide")
