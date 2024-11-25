@@ -1,11 +1,15 @@
 import pandas as pd
 
-def analyze_bom_data(bom_a_l, bom_m_z):
+def analyze_bom_data(bom_a_l, bom_m_z, dispensing_data=None, raw_materials=None):
     """
-    Comprehensive BOM data analysis function
+    Enhanced BOM data analysis with Dispensing and Raw Materials integration.
     """
     combined_bom = pd.concat([bom_a_l, bom_m_z], ignore_index=True)
 
+    # Ensure component_usage is initialized
+    component_usage = pd.DataFrame()
+
+    # Product metrics and complexity
     def calculate_product_metrics(df):
         product_costs = df.groupby("FG Code").agg({
             "TOTCOST": "sum",
@@ -57,8 +61,31 @@ def analyze_bom_data(bom_a_l, bom_m_z):
         }
         return cost_stats
 
+    # Calculate product metrics and complexity
     product_metrics, product_complexity = calculate_product_metrics(combined_bom)
+
+    # Analyze component usage
     component_usage = analyze_component_usage(combined_bom)
+
+    # Add dispensing data integration if provided
+    if dispensing_data is not None:
+        dispensing_summary = dispensing_data.groupby("Code").agg({
+            "Qty": "sum",
+            "Value": "sum"
+        }).rename(columns={
+            "Qty": "dispensed_qty",
+            "Value": "dispensed_value"
+        })
+        # Merge dispensing data with component usage
+        component_usage = component_usage.join(dispensing_summary, how="left")
+
+    # Add raw materials integration if provided
+    if raw_materials is not None:
+        stock_summary = raw_materials.groupby("TRIMcode").agg({"SOH": "sum"})
+        # Merge stock data with component usage
+        component_usage = component_usage.join(stock_summary, how="left")
+
+    # Cost distribution
     cost_distribution = calculate_cost_distribution(combined_bom)
 
     return {
