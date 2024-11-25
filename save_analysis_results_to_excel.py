@@ -1,3 +1,5 @@
+import pandas as pd
+
 def save_analysis_results_to_excel(analysis_results, buffer):
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         analysis_results["product_metrics"].to_excel(writer, sheet_name="Product_Metrics")
