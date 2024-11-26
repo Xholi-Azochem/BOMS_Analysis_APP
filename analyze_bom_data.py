@@ -1,5 +1,8 @@
 import pandas as pd
+import streamlit as st
 
+
+@st.cache_data
 def analyze_bom_data(bom_a_l, bom_m_z, dispensing_data=None, raw_materials=None):
     """
     Enhanced BOM data analysis with Dispensing and Raw Materials integration.
