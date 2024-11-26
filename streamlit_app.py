@@ -192,21 +192,38 @@ if all([uploaded_bom_a_l, uploaded_bom_m_z, uploaded_dispensing, uploaded_raw_ma
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
             return df
 
-        # Load raw files
-        bom_a_l = dd.read_csv(uploaded_bom_a_l) #if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
-        bom_m_z = dd.read_csv(uploaded_bom_m_z) # if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
-        dispensing_data = dd.read_csv(uploaded_dispensing) #if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
-        raw_materials = dd.read_csv(uploaded_raw_materials) #if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
+      #  # # Load raw files
+      #  # bom_a_l = dd.read_csv(uploaded_bom_a_l) #if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
+       # # bom_m_z = dd.read_csv(uploaded_bom_m_z) # if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
+       # # dispensing_data = dd.read_csv(uploaded_dispensing) #if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
+       # # raw_materials = dd.read_csv(uploaded_raw_materials) #if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
 
-        # Convert to pandas DataFrame when necessary
-        bom_a_l = bom_a_l.compute()
-        bom_m_z = bom_m_z.compute()
+        bom_a_l = pd.read_excel(uploaded_bom_a_l) if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
+        bom_m_z =pd.read_excel(uploaded_bom_m_z)  if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
+        dispensing_data = pd.read_excel(uploaded_dispensing) if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
+        raw_materials = pd.read_excel(uploaded_raw_materials) if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
+
+
+        # # Convert to pandas DataFrame when necessary
+        # bom_a_l = bom_a_l.compute()
+        # bom_m_z = bom_m_z.compute()
         
         # Define numeric columns to clean
         numeric_columns_bom = ["TOTCOST", "L2 CostInBOM", "L2 Unti Qty", "L3 Unit Qty"]
         numeric_columns_dispensing = ["Qty", "Cost", "Value"]
         numeric_columns_raw_materials = ["SOH", "Cost", "Value"]
 
+        def optimize_memory(df):
+            for col in df.select_dtypes(include=["float64", "int64"]).columns:
+                df[col] = pd.to_numeric(df[col], downcast="float" if df[col].dtype == "float64" else "integer")
+            return df
+        
+        bom_a_l = optimize_memory(bom_a_l)
+        bom_m_z = optimize_memory(bom_m_z)
+        dispensing_data = optimize_memory(dispensing_data)
+        raw_materials = optimize_memory(raw_materials)
+
+        
         # Clean data
         bom_a_l = clean_data(bom_a_l, numeric_columns_bom)
         bom_m_z = clean_data(bom_m_z, numeric_columns_bom)
