@@ -26,6 +26,7 @@ def calculate_requirements(product, quantity_desired, analysis_results, dispensi
         # Append to requirements
         requirements.append({
             "Component": component,
+            "Unit_Req":avg_qty_per_unit
             "Required Quantity": required_qty,
             "Stock Quantity": stock_qty,
             "Sufficient Stock": "Yes" if sufficient else "No"
