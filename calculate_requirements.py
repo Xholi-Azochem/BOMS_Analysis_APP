@@ -14,7 +14,7 @@ def calculate_requirements(product, quantity_desired, analysis_results, dispensi
     for component in component_usage.index:
         # Get average quantity per unit and scale by desired quantity
         avg_qty_per_unit = component_usage.loc[component, "avg_quantity"]
-        required_qty = avg_qty_per_unit * quantity_desired
+        required_qty = (avg_qty_per_unit + 0.25(avg_qty_per_unit)) * quantity_desired
 
         # Fetch current stock
         stock_row = raw_materials[raw_materials["TRIMcode"] == component]
