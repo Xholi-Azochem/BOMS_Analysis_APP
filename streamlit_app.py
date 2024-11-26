@@ -7,6 +7,8 @@ from analyze_bom_data import analyze_bom_data
 from generate_insights import generate_insights
 from save_analysis_results_to_excel import save_analysis_results_to_excel
 from calculate_requirements import calculate_requirements
+import dask.dataframe as dd
+
 
 # Set page config
 st.set_page_config(page_title="Enhanced BOM Analysis", layout="wide")
@@ -191,11 +193,15 @@ if all([uploaded_bom_a_l, uploaded_bom_m_z, uploaded_dispensing, uploaded_raw_ma
             return df
 
         # Load raw files
-        bom_a_l = pd.read_excel(uploaded_bom_a_l) if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
-        bom_m_z = pd.read_excel(uploaded_bom_m_z) if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
-        dispensing_data = pd.read_excel(uploaded_dispensing) if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
-        raw_materials = pd.read_excel(uploaded_raw_materials) if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
+        bom_a_l = dd.read_csv(uploaded_bom_a_l) if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
+        bom_m_z = dd.read_csv(uploaded_bom_m_z) if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
+        dispensing_data = dd.read_csv(uploaded_dispensing) if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
+        raw_materials = dd.read_csv(uploaded_raw_materials) if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
 
+        # Convert to pandas DataFrame when necessary
+        bom_a_l = bom_a_l.compute()
+        bom_m_z = bom_m_z.compute()
+        
         # Define numeric columns to clean
         numeric_columns_bom = ["TOTCOST", "L2 CostInBOM", "L2 Unti Qty", "L3 Unit Qty"]
         numeric_columns_dispensing = ["Qty", "Cost", "Value"]
