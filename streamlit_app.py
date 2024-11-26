@@ -193,10 +193,10 @@ if all([uploaded_bom_a_l, uploaded_bom_m_z, uploaded_dispensing, uploaded_raw_ma
             return df
 
         # Load raw files
-        bom_a_l = dd.read_csv(uploaded_bom_a_l) if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
-        bom_m_z = dd.read_csv(uploaded_bom_m_z) if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
-        dispensing_data = dd.read_csv(uploaded_dispensing) if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
-        raw_materials = dd.read_csv(uploaded_raw_materials) if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
+        bom_a_l = dd.read_csv(uploaded_bom_a_l) #if uploaded_bom_a_l.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_a_l)
+        bom_m_z = dd.read_csv(uploaded_bom_m_z) # if uploaded_bom_m_z.name.endswith(".xlsx") else pd.read_csv(uploaded_bom_m_z)
+        dispensing_data = dd.read_csv(uploaded_dispensing) #if uploaded_dispensing.name.endswith(".xlsx") else pd.read_csv(uploaded_dispensing)
+        raw_materials = dd.read_csv(uploaded_raw_materials) #if uploaded_raw_materials.name.endswith(".xlsx") else pd.read_csv(uploaded_raw_materials)
 
         # Convert to pandas DataFrame when necessary
         bom_a_l = bom_a_l.compute()
