@@ -1,10 +1,6 @@
-pandas
-matplotlib
-seaborn
-numpy
-streamlit
-plotly
-openpyxl
-dask
-statsmodels
-
+streamlit==1.27.0
+pandas==2.0.3
+plotly==5.17.0
+numpy==1.26.0
+statsmodels==0.14.0
+openpyxl==3.1.2
