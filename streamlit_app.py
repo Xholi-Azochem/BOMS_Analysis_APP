@@ -9,6 +9,8 @@ from data_utils import clean_data, optimize_memory
 import functools
 from io import BytesIO
 import logging
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -294,13 +296,87 @@ def overview_page(analysis_results):
     fig = px.bar(complexity_df, x="Product Code", y="Complexity Score", color="Complexity Score",
                  title="Top 10 Most Complex Products", color_continuous_scale="Viridis")
     st.plotly_chart(fig, use_container_width=True)
-
-    # Key Insights
-    st.subheader("Key Insights")
-    insights = generate_insights(analysis_results)
-    for insight in insights:
-        st.info(insight)
-
+    st.subheader("Product Complexity Heatmap")
+    complexity_df = analysis_results["product_complexity"].reset_index()
+    complexity_df.columns = ['Product Code', 'Complexity Score']
+    fig = px.density_heatmap(
+        complexity_df,
+        x="Product Code",
+        y="Complexity Score",
+        color_continuous_scale="Blues",
+        title="Complexity Distribution by Product"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    st.subheader("Dashboard Summary")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Products", len(analysis_results["product_metrics"]))
+    with col2:
+        avg_cost = analysis_results["cost_distribution"]["avg_product_cost"]
+        st.metric("Avg Product Cost", f"R{avg_cost:.2f}")
+    with col3:
+        insufficient_count = len(analysis_results["component_usage"][analysis_results["component_usage"]["SOH"] < analysis_results["component_usage"]["avg_quantity"]])
+        st.metric("Insufficient Stock", insufficient_count)
+    with col4:
+        most_complex = analysis_results["product_complexity"].idxmax()
+        st.metric("Most Complex Product", most_complex)
+    
+if uploaded_dispensing:
+    # Load the dispensing data based on file extension
+    try:
+        if uploaded_dispensing.name.endswith(".csv"):
+            dispensing_data = pd.read_csv(uploaded_dispensing)
+        elif uploaded_dispensing.name.endswith(".xlsx"):
+            dispensing_data = pd.read_excel(uploaded_dispensing)
+        else:
+            st.error("Unsupported file type. Please upload a .csv or .xlsx file.")
+        
+        # Check for necessary columns
+        if "Date" not in dispensing_data.columns or "Qty" not in dispensing_data.columns:
+            st.error("The uploaded file must contain 'Date' and 'Qty' columns.")
+        else:
+            # Process the data for Holt-Winters forecasting
+            st.subheader("Stock Dispensing Forecast Using Holt-Winters")
+            
+            # Convert "Date" column to datetime
+            dispensing_data["Date"] = pd.to_datetime(dispensing_data["Date"], errors="coerce")
+            
+            # Drop rows with invalid or missing dates
+            dispensing_data = dispensing_data.dropna(subset=["Date"])
+            
+            # Sort data by date
+            dispensing_data = dispensing_data.sort_values("Date")
+            
+            # Check if data is non-empty
+            if dispensing_data.empty:
+                st.error("The dispensing data is empty after cleaning. Please check your file.")
+            else:
+                # Fit the Holt-Winters model
+                model = ExponentialSmoothing(
+                    dispensing_data["Qty"],
+                    trend="add",
+                    seasonal="add",
+                    seasonal_periods=12
+                )
+                fitted_model = model.fit()
+                
+                # Forecast for 30 steps
+                forecast = fitted_model.forecast(steps=30)
+                
+                # Create a forecast DataFrame
+                forecast_dates = pd.date_range(
+                    start=dispensing_data["Date"].iloc[-1], periods=30, freq="D"
+                )
+                forecast_df = pd.DataFrame({"Date": forecast_dates, "Qty": forecast})
+                
+                # Plot original and forecasted data
+                fig = px.line(dispensing_data, x="Date", y="Qty", title="Holt-Winters Stock Forecast")
+                fig.add_scatter(x=forecast_df["Date"], y=forecast_df["Qty"], mode="lines", name="Forecast")
+                st.plotly_chart(fig, use_container_width=True)
+    except Exception as e:
+        st.error(f"An error occurred while processing the Dispensing Data: {e}")
+else:
+    st.info("Please upload the Dispensing Data file to proceed.")
 
 
 def product_metrics_page(analysis_results):
@@ -332,6 +408,19 @@ def product_metrics_page(analysis_results):
             create_metric_card("Total Cost", f"R{product_data['TOTCOST']:,.2f}")
         with col3:
             create_metric_card("Component Cost", f"R{product_data['total_component_cost']:,.2f}")
+   
+    st.subheader("Compare Products")
+    product_1 = st.selectbox("Select First Product", analysis_results["product_metrics"].index)
+    product_2 = st.selectbox("Select Second Product", analysis_results["product_metrics"].index)
+
+    comparison = pd.DataFrame({
+        "Metric": ["Total Cost", "Component Count"],
+        "Product 1": [analysis_results["product_metrics"].loc[product_1, "TOTCOST"], 
+                    analysis_results["product_metrics"].loc[product_1, "component_count"]],
+        "Product 2": [analysis_results["product_metrics"].loc[product_2, "TOTCOST"], 
+                    analysis_results["product_metrics"].loc[product_2, "component_count"]],
+    })
+    st.table(comparison)
 
 
 def component_analysis_page(analysis_results):
@@ -346,12 +435,18 @@ def component_analysis_page(analysis_results):
     st.plotly_chart(fig, use_container_width=True)
 
     # Component Cost vs Quantity
-    st.subheader("Component Cost vs Quantity Distribution")
-    fig = px.scatter(analysis_results["component_usage"], x="avg_cost", y="avg_quantity",
-                     size="used_in_products", color="avg_cost",
-                     title="Component Cost vs Quantity Distribution")
+    st.subheader("Component Cost vs Quantity Correlation")
+    fig = px.scatter(
+        analysis_results["component_usage"],
+        x="avg_cost",
+        y="avg_quantity",
+        size="used_in_products",
+        color="avg_cost",
+        hover_name=analysis_results["component_usage"].index,
+        title="Cost vs Quantity Correlation",
+        labels={"avg_cost": "Average Cost", "avg_quantity": "Average Quantity"}
+    )
     st.plotly_chart(fig, use_container_width=True)
-
 
 def cost_analysis_page(analysis_results):
     """Cost Analysis Page."""
@@ -366,6 +461,16 @@ def cost_analysis_page(analysis_results):
     with col3:
         median_cost = analysis_results['cost_distribution']['cost_percentiles'][0.5]
         st.metric("Median Cost", f"R{median_cost:,.2f}")
+    st.subheader("Cost Distribution Across Products")
+    cost_df = analysis_results["product_metrics"][["TOTCOST"]].reset_index()
+    fig = px.box(
+        cost_df,
+        y="TOTCOST",
+        points="all",
+        title="Product Cost Distribution",
+        labels={"TOTCOST": "Total Cost"},
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # Memoization decorator for performance
@@ -381,7 +486,7 @@ def cached_requirements_calculation(product, quantity_desired, analysis_results_
 
 
 
-
+@functools.lru_cache(maxsize=128)
 def get_previous_l2_qty(product, bom_data):
     """
     Find the previous L2 Unti Qty for a specific product.
@@ -402,7 +507,7 @@ def get_previous_l2_qty(product, bom_data):
         return l2_qty.mean() if not l2_qty.empty else None
     
     return None
-
+@functools.lru_cache(maxsize=128)
 def get_column_name(df, possible_names):
     """
     Find the first matching column name from a list of possible names.
@@ -418,7 +523,7 @@ def get_column_name(df, possible_names):
         if name in df.columns:
             return name
     return None
-
+# @functools.lru_cache(maxsize=128)
 def calculate_custom_requirements(product, quantity_desired, bom_a_l, bom_m_z, analysis_results):
     """
     Calculate detailed product requirements with enhanced information including:
@@ -434,7 +539,7 @@ def calculate_custom_requirements(product, quantity_desired, bom_a_l, bom_m_z, a
         'assly': ['Assly Part Number', 'Assembly Part Number', 'Product', 'ProductCode', 'FG Code'],
         'component': ['Component', 'ComponentCode', 'Part Number', 'PartNumber', 'L2 Code'],
         'qty': ['L2 Unti Qty', 'L2 Unit Quantity', 'UnitQuantity', 'Unit Qty'],
-        'description': ['Description', 'Component Description', 'Item Description', 'Part Description']
+        'description': ['Description', 'L2 Description','Component Description', 'Item Description', 'Part Description']
     }
     
     # Find matching columns
@@ -585,6 +690,35 @@ def search_and_requirements_page(analysis_results, bom_a_l, bom_m_z, dispensing_
                         insufficient_components[['Component Code', 'Description', 'Total Unit Quantity', 'Stock on Hand']], 
                         use_container_width=True
                     )
+                    # st.subheader("Components with Insufficient Stock")
+                    # insufficient_stock = analysis_results["component_usage"][analysis_results["component_usage"]["SOH"] < analysis_results["component_usage"]["avg_quantity"]]
+                    # if not insufficient_stock.empty:
+                    #     fig = px.bar(
+                    #         insufficient_stock,
+                    #         x="SOH",
+                    #         y=insufficient_stock.index,
+                    #         orientation="h",
+                    #         color="avg_quantity",
+                    #         title="Components with Insufficient Stock",
+                    #         labels={"SOH": "Stock on Hand", "avg_quantity": "Average Required Quantity"},
+                    #     )
+                    #     st.plotly_chart(fig, use_container_width=True)
+                    # else:
+                        # st.info("All components have sufficient stock.")
+                    #     st.subheader("Lead Time Simulation")
+                    # lead_time_weeks = st.slider("Select Lead Time (Weeks)", min_value=4, max_value=8, value=6)
+                    # simulated_lead_time = analysis_results["product_metrics"].copy()
+                    # simulated_lead_time["Adjusted Qty"] = simulated_lead_time["MIN_QTY_TO_PRODUCE"] * lead_time_weeks
+
+                    # fig = px.line(
+                    #     simulated_lead_time,
+                    #     x="FG Code",
+                    #     y="Adjusted Qty",
+                    #     title="Production Feasibility with Lead Time",
+                    #     labels={"FG Code": "Product", "Adjusted Qty": "Adjusted Quantity"}
+                    # )
+                    # st.plotly_chart(fig, use_container_width=True)
+
             else:
                 st.warning(f"No requirements found for product: {product}")
         except Exception as e:
