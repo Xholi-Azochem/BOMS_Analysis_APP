@@ -8,7 +8,16 @@ def clean_data(df, numeric_columns):
     return df
 
 def optimize_memory(df):
-    """Optimize memory usage of a DataFrame."""
-    for col in df.select_dtypes(include=["float64", "int64"]).columns:
-        df[col] = pd.to_numeric(df[col], downcast="float" if df[col].dtype == "float64" else "integer")
+    # Convert object columns to categorical where appropriate
+    for col in df.select_dtypes(include=['object']).columns:
+        if df[col].nunique() / len(df) < 0.5:  # Only convert if low cardinality
+            df[col] = df[col].astype('category')
+    
+    # Downcast numeric columns
+    float_cols = df.select_dtypes(include=['float64']).columns
+    int_cols = df.select_dtypes(include=['int64']).columns
+    
+    df[float_cols] = df[float_cols].apply(pd.to_numeric, downcast='float')
+    df[int_cols] = df[int_cols].apply(pd.to_numeric, downcast='integer')
+    
     return df
