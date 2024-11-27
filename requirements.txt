@@ -6,4 +6,5 @@ streamlit
 plotly
 openpyxl
 dask
-fbprophet
+functools
+statsmodels
