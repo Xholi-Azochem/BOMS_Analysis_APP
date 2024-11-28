@@ -26,13 +26,13 @@ st.set_page_config(page_title="Enhanced BOM Analysis", layout="wide")
 st.markdown("""
     <style>
     .metric-card {
-        background-color: #f8f9fa;
+        background-color: rgba(248, 249, 250, 0.8);  # Transparent light gray
         border-radius: 5px;
         padding: 20px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
     div[data-testid="metric-container"] {
-        background-color: #f8f9fa;
+        background-color: rgba(248, 249, 250, 0.8);
         padding: 15px;
         border-radius: 5px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
@@ -40,6 +40,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 # Initialize session state variables if not already present
 if 'data_loaded' not in st.session_state:
@@ -92,7 +93,7 @@ if st.sidebar.button("Process Data", key="process_data_btn"):
         st.session_state.analysis_results = analyze_bom_data(
             st.session_state.bom_a_l, 
             st.session_state.bom_m_z, 
-            st.session_state.dispensing_data, 
+            st.session_state.dispensing_data,    
             st.session_state.raw_materials
         )
         
