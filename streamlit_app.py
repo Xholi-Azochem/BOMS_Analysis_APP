@@ -26,13 +26,13 @@ st.set_page_config(page_title="Enhanced BOM Analysis", layout="wide")
 st.markdown("""
     <style>
     .metric-card {
-        background-color: rgba(248, 249, 250, 0.8);  # Transparent light gray
+        background-color: rgba(248, 249, 250, 0.95);  # Transparent light gray
         border-radius: 5px;
         padding: 20px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
     div[data-testid="metric-container"] {
-        background-color: rgba(248, 249, 250, 0.8);
+        background-color: rgba(248, 249, 250, 0.95);
         padding: 15px;
         border-radius: 5px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
