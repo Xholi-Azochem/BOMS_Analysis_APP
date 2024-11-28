@@ -1,3 +1,8 @@
+import pandas as pd 
+import streamlit as st
+
+
+@st.cache_resource
 def generate_insights(analysis_results):
     insights = []
 
@@ -26,4 +31,3 @@ def generate_insights(analysis_results):
         insights.append("All components have sufficient stock levels for average usage.")
 
     return insights
-
