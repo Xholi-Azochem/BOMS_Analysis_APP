@@ -7,7 +7,7 @@ from calculate_requirements import calculate_requirements, calculate_custom_requ
 from generate_insights import generate_insights
 from search_and_requirements_page import search_and_requirements_page
 from save_analysis_results_to_excel import save_analysis_results_to_excel
-from meric_card import create_metric_card
+from metric_card import create_metric_card
 from data_utils import clean_data, optimize_memory
 import functools
 from io import BytesIO
